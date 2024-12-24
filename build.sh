@@ -8,7 +8,7 @@ echo "🚀 Starting deployment process..."
 # Install dependencies and build client
 echo "📦 Installing client dependencies..."
 cd client
-npm install --production=false
+npm install --legacy-peer-deps --production=false
 echo "🏗️ Building client..."
 npm run build
 cd ..
