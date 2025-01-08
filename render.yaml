@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: finance-manager
+    name: finance-manager-api
     env: node
-    buildCommand: ./build.sh
+    buildCommand: cd server && npm install --production
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
@@ -12,3 +12,13 @@ services:
       - key: JWT_SECRET
         sync: false
     healthCheckPath: /api/health
+
+  - type: static
+    name: finance-manager-client
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: VITE_API_URL
+        value: https://finance-manager-api.onrender.com
