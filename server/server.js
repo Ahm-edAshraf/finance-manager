@@ -68,14 +68,11 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../client/dist')));
-    
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-    });
-}
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
