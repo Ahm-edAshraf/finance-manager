@@ -49,6 +49,11 @@ interface Expense {
   description: string;
 }
 
+interface TopExpense {
+  category: string;
+  amount: number;
+}
+
 interface AnalyticsData {
   expenses: Expense[];
   totalExpenses: number;
@@ -68,10 +73,7 @@ interface AnalyticsData {
     actual: number[];
   };
   savingsRate: number;
-  topExpenses: {
-    category: string;
-    amount: number;
-  }[];
+  topExpenses: TopExpense[];
 }
 
 const timeRanges = ['Last 7 Days', 'Last 30 Days', 'Last 3 Months', 'Last 6 Months', 'Last Year'];
@@ -158,7 +160,7 @@ export const Analytics = () => {
             label="Time Range"
             onChange={(e) => setTimeRange(e.target.value)}
           >
-            {timeRanges.map(range => (
+            {timeRanges.map((range: string) => (
               <MenuItem key={range} value={range}>
                 {range}
               </MenuItem>
@@ -264,7 +266,7 @@ export const Analytics = () => {
               Top Expenses
             </Typography>
             <Box>
-              {analytics.topExpenses.map((expense, index) => (
+              {analytics.topExpenses.map((expense: TopExpense, index: number) => (
                 <Box
                   key={expense.category}
                   sx={{
