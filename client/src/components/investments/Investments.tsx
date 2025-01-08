@@ -27,7 +27,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, TrendingUp, TrendingDown } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { PageContainer } from '../common/PageContainer';
+import PageContainer from '../common/PageContainer';
 
 interface Investment {
   _id: string;
