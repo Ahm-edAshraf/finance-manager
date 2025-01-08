@@ -16,8 +16,9 @@ import {
   AccountBalance as BudgetsIcon,
   TrendingUp as InvestmentsIcon,
   BarChart as AnalyticsIcon,
-  Category as CategoriesIcon,
+  Psychology as AIIcon,
   Settings as SettingsIcon,
+  TipsAndUpdates as InsightsIcon,
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -35,7 +36,6 @@ export const Sidebar = ({ open, onClose }: SidebarProps) => {
     { text: 'Budgets', icon: <BudgetsIcon />, path: '/budgets' },
     { text: 'Investments', icon: <InvestmentsIcon />, path: '/investments' },
     { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-    { text: 'Categories', icon: <CategoriesIcon />, path: '/categories' },
   ];
 
   const isCurrentPath = (path: string) => {

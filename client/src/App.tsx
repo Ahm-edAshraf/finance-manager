@@ -67,9 +67,9 @@ function App() {
                   <Route path="expenses" element={<Expenses />} />
                   <Route path="budgets" element={<Budgets />} />
                   <Route path="investments" element={<Investments />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="profile" element={<Profile />} />
-                  <Route path="settings" element={<Settings />} />
+                  <Route path="analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 </Route>
               </Routes>
             </Router>

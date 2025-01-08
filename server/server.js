@@ -60,13 +60,14 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
 });
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../client/dist')));
+    
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    });
+}
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
