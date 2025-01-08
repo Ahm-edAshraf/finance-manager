@@ -24,6 +24,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { apiCall } from '../../config/api';
 
 interface Expense {
   _id: string;
@@ -79,6 +80,40 @@ const initialFormData: ExpenseFormData = {
   isRecurring: false
 };
 
+const fetchExpenses = async () => {
+  const response = await apiCall('/expenses');
+  return response.json();
+};
+
+const addExpense = async (data: ExpenseFormData) => {
+  const response = await apiCall('/expenses', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...data,
+      date: data.date.toISOString()
+    })
+  });
+  return response.json();
+};
+
+const updateExpense = async ({ id, data }: { id: string; data: ExpenseFormData }) => {
+  const response = await apiCall(`/expenses/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...data,
+      date: data.date.toISOString()
+    })
+  });
+  return response.json();
+};
+
+const deleteExpense = async (id: string) => {
+  const response = await apiCall(`/expenses/${id}`, {
+    method: 'DELETE'
+  });
+  return response.json();
+};
+
 export const Expenses = () => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<ExpenseFormData>(initialFormData);
@@ -89,37 +124,11 @@ export const Expenses = () => {
   const queryClient = useQueryClient();
 
   // Fetch expenses
-  const { data: expenses, isLoading } = useQuery<Expense[]>('expenses', async () => {
-    const response = await fetch('http://localhost:5000/api/expenses', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch expenses');
-    }
-    return response.json();
-  });
+  const { data: expenses, isLoading } = useQuery<Expense[]>('expenses', fetchExpenses);
 
   // Create expense mutation
   const createExpense = useMutation(
-    async (data: ExpenseFormData) => {
-      const response = await fetch('http://localhost:5000/api/expenses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          ...data,
-          date: data.date.toISOString()
-        })
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create expense');
-      }
-      return response.json();
-    },
+    addExpense,
     {
       onSuccess: () => {
         queryClient.invalidateQueries('expenses');
@@ -132,24 +141,8 @@ export const Expenses = () => {
   );
 
   // Update expense mutation
-  const updateExpense = useMutation(
-    async ({ id, data }: { id: string; data: ExpenseFormData }) => {
-      const response = await fetch(`http://localhost:5000/api/expenses/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          ...data,
-          date: data.date.toISOString()
-        })
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update expense');
-      }
-      return response.json();
-    },
+  const updateExpenseMutation = useMutation(
+    updateExpense,
     {
       onSuccess: () => {
         queryClient.invalidateQueries('expenses');
@@ -162,18 +155,8 @@ export const Expenses = () => {
   );
 
   // Delete expense mutation
-  const deleteExpense = useMutation(
-    async (id: string) => {
-      const response = await fetch(`http://localhost:5000/api/expenses/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete expense');
-      }
-    },
+  const deleteExpenseMutation = useMutation(
+    deleteExpense,
     {
       onSuccess: () => {
         queryClient.invalidateQueries('expenses');
@@ -221,7 +204,7 @@ export const Expenses = () => {
     }
 
     if (editingId) {
-      updateExpense.mutate({ id: editingId, data: formData });
+      updateExpenseMutation.mutate({ id: editingId, data: formData });
     } else {
       createExpense.mutate(formData);
     }
@@ -299,7 +282,7 @@ export const Expenses = () => {
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={() => deleteExpense.mutate(expense._id)}
+                    onClick={() => deleteExpenseMutation.mutate(expense._id)}
                   >
                     <DeleteIcon />
                   </IconButton>

@@ -10,6 +10,7 @@ import {
 import { motion } from 'framer-motion';
 import { Line } from 'react-chartjs-2';
 import { useQuery } from 'react-query';
+import { apiCall } from '../../config/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -59,14 +60,7 @@ const chartOptions = {
 
 export const Dashboard = () => {
   const { data: dashboardData, isLoading, error } = useQuery('dashboard', async () => {
-    const response = await fetch('http://localhost:5000/api/dashboard', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch dashboard data');
-    }
+    const response = await apiCall('/dashboard');
     return response.json();
   });
 
