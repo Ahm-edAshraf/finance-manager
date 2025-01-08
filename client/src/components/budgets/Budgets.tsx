@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { apiCall } from '../../config/api';
 
 interface Budget {
   _id: string;
@@ -59,103 +60,78 @@ const initialFormData: BudgetFormData = {
   description: '',
 };
 
+const fetchBudgets = async () => {
+  const response = await apiCall('/budgets');
+  return response.json();
+};
+
+const addBudget = async (data: BudgetFormData) => {
+  const response = await apiCall('/budgets', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
+const updateBudget = async ({ id, data }: { id: string; data: BudgetFormData }) => {
+  const response = await apiCall(`/budgets/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
+const deleteBudget = async (id: string) => {
+  const response = await apiCall(`/budgets/${id}`, {
+    method: 'DELETE'
+  });
+  return response.json();
+};
+
 export const Budgets = () => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<BudgetFormData>(initialFormData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const queryClient = useQueryClient();
 
   // Fetch budgets
-  const { data: budgets, isLoading } = useQuery<Budget[]>('budgets', async () => {
-    const response = await fetch('http://localhost:5000/api/budgets', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch budgets');
-    }
-    return response.json();
-  });
+  const { data: budgets, isLoading } = useQuery<Budget[]>('budgets', fetchBudgets);
 
   // Create budget mutation
-  const createBudget = useMutation(
-    async (data: BudgetFormData) => {
-      const response = await fetch('http://localhost:5000/api/budgets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create budget');
-      }
-      return response.json();
+  const createBudget = useMutation(addBudget, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('budgets');
+      handleClose();
+      setFormData(initialFormData);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('budgets');
-        handleClose();
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   // Update budget mutation
-  const updateBudget = useMutation(
-    async ({ id, data }: { id: string; data: BudgetFormData }) => {
-      const response = await fetch(`http://localhost:5000/api/budgets/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update budget');
-      }
-      return response.json();
+  const updateBudgetMutation = useMutation(updateBudget, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('budgets');
+      handleClose();
+      setFormData(initialFormData);
+      setEditingId(null);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('budgets');
-        handleClose();
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   // Delete budget mutation
-  const deleteBudget = useMutation(
-    async (id: string) => {
-      const response = await fetch(`http://localhost:5000/api/budgets/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete budget');
-      }
+  const deleteBudgetMutation = useMutation(deleteBudget, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('budgets');
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('budgets');
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   const handleOpen = (budget?: Budget) => {
     if (budget) {
@@ -182,7 +158,7 @@ export const Budgets = () => {
 
   const handleSubmit = () => {
     if (editingId) {
-      updateBudget.mutate({ id: editingId, data: formData });
+      updateBudgetMutation.mutate({ id: editingId, data: formData });
     } else {
       createBudget.mutate(formData);
     }
@@ -256,7 +232,7 @@ export const Budgets = () => {
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={() => deleteBudget.mutate(budget._id)}
+                    onClick={() => deleteBudgetMutation.mutate(budget._id)}
                   >
                     <DeleteIcon />
                   </IconButton>

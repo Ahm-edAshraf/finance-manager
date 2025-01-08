@@ -11,6 +11,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { apiCall } from '../../config/api';
 import { AccountCircle } from '@mui/icons-material';
 
 interface User {
@@ -20,64 +21,67 @@ interface User {
   avatar?: string;
 }
 
+interface ProfileData {
+  name: string;
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
+const fetchProfile = async () => {
+  const response = await apiCall('/users/profile');
+  return response.json();
+};
+
+const updateProfile = async (data: ProfileData) => {
+  const response = await apiCall('/users/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
 export const Profile = () => {
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<ProfileData>({
     name: '',
     email: '',
+    currentPassword: '',
+    newPassword: '',
   });
   const [error, setError] = useState<string | null>(null);
 
-  const queryClient = useQueryClient();
-
-  const { data: user, isLoading } = useQuery<User>('profile', async () => {
-    const response = await fetch('http://localhost:5000/api/users/profile', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch profile');
-    }
-    return response.json();
-  }, {
+  const { data: profile, isLoading } = useQuery('profile', fetchProfile, {
     onSuccess: (data) => {
       setFormData({
         name: data.name,
         email: data.email,
+        currentPassword: '',
+        newPassword: '',
       });
     }
   });
 
-  const updateProfile = useMutation(
-    async (data: { name: string; email: string }) => {
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
+  const updateProfileMutation = useMutation(updateProfile, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('profile');
+      setIsEditing(false);
+      setFormData({
+        name: '',
+        email: '',
+        currentPassword: '',
+        newPassword: '',
       });
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-      return response.json();
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('profile');
-        setEditing(false);
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile.mutate(formData);
+    updateProfileMutation.mutate(formData);
   };
 
   if (isLoading) {
@@ -100,23 +104,23 @@ export const Profile = () => {
             <Avatar
               sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
             >
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} />
+              {profile?.avatar ? (
+                <img src={profile.avatar} alt={profile.name} />
               ) : (
                 <AccountCircle sx={{ width: '100%', height: '100%' }} />
               )}
             </Avatar>
             <Typography variant="h6" sx={{ mb: 1 }}>
-              {user?.name}
+              {profile?.name}
             </Typography>
             <Typography color="text.secondary" sx={{ mb: 2 }}>
-              {user?.email}
+              {profile?.email}
             </Typography>
             <Button
               variant="contained"
-              onClick={() => setEditing(!editing)}
+              onClick={() => setIsEditing(!isEditing)}
             >
-              {editing ? 'Cancel' : 'Edit Profile'}
+              {isEditing ? 'Cancel' : 'Edit Profile'}
             </Button>
           </Card>
         </Grid>
@@ -135,23 +139,23 @@ export const Profile = () => {
                   label="Name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  disabled={!editing}
+                  disabled={!isEditing}
                   fullWidth
                 />
                 <TextField
                   label="Email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  disabled={!editing}
+                  disabled={!isEditing}
                   fullWidth
                 />
-                {editing && (
+                {isEditing && (
                   <Button
                     type="submit"
                     variant="contained"
-                    disabled={updateProfile.isLoading}
+                    disabled={updateProfileMutation.isLoading}
                   >
-                    {updateProfile.isLoading ? 'Saving...' : 'Save Changes'}
+                    {updateProfileMutation.isLoading ? 'Saving...' : 'Save Changes'}
                   </Button>
                 )}
               </Box>

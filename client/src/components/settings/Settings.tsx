@@ -17,6 +17,7 @@ import {
 import { DarkMode, LightMode, PictureAsPdf } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { ColorModeContext } from '../../App';
+import { apiCall } from '../../config/api';
 
 type TimeRange = '7days' | '30days' | '90days' | '180days' | '365days';
 
@@ -25,29 +26,33 @@ export const Settings = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30days');
   const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const handleExportPDF = async () => {
-    setExportStatus('loading');
+  const exportData = async (timeRange: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/reports/export?timeRange=${timeRange}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await apiCall(`/reports/export?timeRange=${timeRange}`, {
+        responseType: 'blob'
       });
-      
-      if (!response.ok) throw new Error('Failed to generate report');
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `finance-report-${timeRange}.pdf`;
+      document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-      setExportStatus('success');
-      
-      setTimeout(() => setExportStatus('idle'), 3000);
     } catch (error) {
       console.error('Export error:', error);
+      throw error;
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExportStatus('loading');
+    try {
+      await exportData(timeRange);
+      setExportStatus('success');
+      setTimeout(() => setExportStatus('idle'), 3000);
+    } catch (error) {
       setExportStatus('error');
       setTimeout(() => setExportStatus('idle'), 3000);
     }

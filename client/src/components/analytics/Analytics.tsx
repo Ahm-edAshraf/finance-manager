@@ -11,6 +11,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useQuery } from 'react-query';
+import { apiCall } from '../../config/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -63,22 +64,17 @@ interface AnalyticsData {
 
 const timeRanges = ['Last 7 Days', 'Last 30 Days', 'Last 3 Months', 'Last 6 Months', 'Last Year'];
 
+const fetchAnalytics = async (timeRange: string) => {
+  const response = await apiCall(`/analytics?timeRange=${encodeURIComponent(timeRange)}`);
+  return response.json();
+};
+
 export const Analytics = () => {
   const [timeRange, setTimeRange] = useState('Last 30 Days');
 
-  const { data: analytics, isLoading } = useQuery<AnalyticsData>(
+  const { data: analytics, isLoading } = useQuery(
     ['analytics', timeRange],
-    async () => {
-      const response = await fetch(`http://localhost:5000/api/analytics?timeRange=${timeRange}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics data');
-      }
-      return response.json();
-    }
+    () => fetchAnalytics(timeRange)
   );
 
   if (isLoading || !analytics) {

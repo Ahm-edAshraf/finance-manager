@@ -27,6 +27,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, TrendingUp, TrendingDown } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { apiCall } from '../../config/api';
 import PageContainer from '../common/PageContainer';
 
 interface Investment {
@@ -66,103 +67,78 @@ const initialFormData: InvestmentFormData = {
   notes: '',
 };
 
+const fetchInvestments = async () => {
+  const response = await apiCall('/investments');
+  return response.json();
+};
+
+const addInvestment = async (data: InvestmentFormData) => {
+  const response = await apiCall('/investments', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
+const updateInvestment = async ({ id, data }: { id: string; data: InvestmentFormData }) => {
+  const response = await apiCall(`/investments/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
+const deleteInvestment = async (id: string) => {
+  const response = await apiCall(`/investments/${id}`, {
+    method: 'DELETE'
+  });
+  return response.json();
+};
+
 export const Investments = () => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState<InvestmentFormData>(initialFormData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const queryClient = useQueryClient();
 
   // Fetch investments
-  const { data: investments, isLoading } = useQuery<Investment[]>('investments', async () => {
-    const response = await fetch('http://localhost:5000/api/investments', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch investments');
-    }
-    return response.json();
-  });
+  const { data: investments, isLoading } = useQuery<Investment[]>('investments', fetchInvestments);
 
   // Create investment mutation
-  const createInvestment = useMutation(
-    async (data: InvestmentFormData) => {
-      const response = await fetch('http://localhost:5000/api/investments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create investment');
-      }
-      return response.json();
+  const createInvestment = useMutation(addInvestment, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('investments');
+      handleClose();
+      setFormData(initialFormData);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('investments');
-        handleClose();
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   // Update investment mutation
-  const updateInvestment = useMutation(
-    async ({ id, data }: { id: string; data: InvestmentFormData }) => {
-      const response = await fetch(`http://localhost:5000/api/investments/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update investment');
-      }
-      return response.json();
+  const updateInvestmentMutation = useMutation(updateInvestment, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('investments');
+      handleClose();
+      setFormData(initialFormData);
+      setEditingId(null);
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('investments');
-        handleClose();
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   // Delete investment mutation
-  const deleteInvestment = useMutation(
-    async (id: string) => {
-      const response = await fetch(`http://localhost:5000/api/investments/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete investment');
-      }
+  const deleteInvestmentMutation = useMutation(deleteInvestment, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('investments');
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('investments');
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      }
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   const handleOpen = (investment?: Investment) => {
     if (investment) {
@@ -190,7 +166,7 @@ export const Investments = () => {
 
   const handleSubmit = () => {
     if (editingId) {
-      updateInvestment.mutate({ id: editingId, data: formData });
+      updateInvestmentMutation.mutate({ id: editingId, data: formData });
     } else {
       createInvestment.mutate(formData);
     }
@@ -325,7 +301,7 @@ export const Investments = () => {
                       <EditIcon />
                     </IconButton>
                     <IconButton 
-                      onClick={() => deleteInvestment.mutate(investment._id)} 
+                      onClick={() => deleteInvestmentMutation.mutate(investment._id)} 
                       size="small" 
                       color="error"
                     >
