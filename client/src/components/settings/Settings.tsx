@@ -17,7 +17,7 @@ import {
 import { DarkMode, LightMode, PictureAsPdf } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { ColorModeContext } from '../../App';
-import { apiCall } from '../../config/api';
+import { apiCall, addAuthInterceptor } from '../../config/api';
 
 type TimeRange = '7days' | '30days' | '90days' | '180days' | '365days';
 
@@ -29,7 +29,11 @@ export const Settings = () => {
   const exportData = async (timeRange: string) => {
     try {
       const response = await apiCall(`/reports/export?timeRange=${timeRange}`, {
-        responseType: 'blob'
+        ...addAuthInterceptor(),
+        headers: {
+          ...addAuthInterceptor().headers,
+          'Accept': 'application/pdf'
+        }
       });
       
       const blob = await response.blob();

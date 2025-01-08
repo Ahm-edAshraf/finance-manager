@@ -41,10 +41,22 @@ ChartJS.register(
   Filler
 );
 
+interface Expense {
+  _id: string;
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+}
+
 interface AnalyticsData {
+  expenses: Expense[];
+  totalExpenses: number;
   expensesByCategory: {
-    labels: string[];
-    data: number[];
+    [key: string]: number;
+  };
+  expensesByMonth: {
+    [key: string]: number;
   };
   expensesTrend: {
     labels: string[];
@@ -86,10 +98,10 @@ export const Analytics = () => {
   }
 
   const expensesByCategory = {
-    labels: analytics.expensesByCategory.labels,
+    labels: Object.keys(analytics.expensesByCategory),
     datasets: [
       {
-        data: analytics.expensesByCategory.data,
+        data: Object.values(analytics.expensesByCategory),
         backgroundColor: [
           '#FF6384',
           '#36A2EB',

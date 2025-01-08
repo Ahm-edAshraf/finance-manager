@@ -1,6 +1,10 @@
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export const API_URL = `${BASE_URL}/api`;
 
+interface ApiOptions extends RequestInit {
+  responseType?: 'blob';
+}
+
 // Helper function to get headers with auth token
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -11,7 +15,7 @@ export const getAuthHeaders = () => {
 };
 
 // Helper function for API calls
-export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+export const apiCall = async (endpoint: string, options: ApiOptions = {}) => {
   const url = `${API_URL}${endpoint}`;
   const headers = {
     ...getAuthHeaders(),
@@ -28,4 +32,16 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   return response;
+};
+
+// Add interceptor-like functionality
+export const addAuthInterceptor = () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    const defaultHeaders = getAuthHeaders();
+    return {
+      headers: defaultHeaders
+    };
+  }
+  return {};
 };

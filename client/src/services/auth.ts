@@ -1,4 +1,4 @@
-import { apiCall } from '../config/api';
+import { apiCall, addAuthInterceptor } from '../config/api';
 
 interface LoginData {
   email: string;
@@ -23,7 +23,9 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
     method: 'POST',
     body: JSON.stringify(data)
   });
-  return response.json();
+  const result = await response.json();
+  localStorage.setItem('token', result.token);
+  return result;
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
@@ -31,19 +33,12 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
     method: 'POST',
     body: JSON.stringify(data)
   });
-  return response.json();
+  const result = await response.json();
+  localStorage.setItem('token', result.token);
+  return result;
 };
 
 export const getProfile = async (): Promise<AuthResponse['user']> => {
-  const response = await apiCall('/users/profile');
+  const response = await apiCall('/users/profile', addAuthInterceptor());
   return response.json();
 };
-
-// Add token to all requests
-apiCall.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
