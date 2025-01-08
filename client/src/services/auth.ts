@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const API_URL = `${BASE_URL}/api`;
+import { apiCall } from '../config/api';
 
 interface LoginData {
   email: string;
@@ -22,25 +19,28 @@ interface AuthResponse {
 }
 
 export const login = async (data: LoginData): Promise<AuthResponse> => {
-  const response = await axios.post(`${API_URL}/users/login`, data);
-  return response.data;
+  const response = await apiCall('/users/login', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return response.json();
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await axios.post(`${API_URL}/users/register`, data);
-  return response.data;
+  const response = await apiCall('/users/register', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return response.json();
 };
 
 export const getProfile = async (): Promise<AuthResponse['user']> => {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${API_URL}/users/profile`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+  const response = await apiCall('/users/profile');
+  return response.json();
 };
 
 // Add token to all requests
-axios.interceptors.request.use((config) => {
+apiCall.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

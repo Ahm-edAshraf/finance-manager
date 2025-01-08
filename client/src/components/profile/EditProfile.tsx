@@ -11,6 +11,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useMutation, useQueryClient } from 'react-query';
+import { apiCall } from '../../config/api';
 
 interface EditProfileProps {
   open: boolean;
@@ -21,47 +22,41 @@ interface EditProfileProps {
   };
 }
 
+interface ProfileFormData {
+  name: string;
+  email: string;
+}
+
+const updateProfile = async (data: ProfileFormData) => {
+  const response = await apiCall('/users/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+};
+
 export const EditProfile = ({ open, onClose, currentUser }: EditProfileProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: currentUser.name,
     email: currentUser.email,
   });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const updateProfile = useMutation(
-    async (data: typeof formData) => {
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
-      }
-
-      return response.json();
+  const updateProfileMutation = useMutation(updateProfile, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('profile');
+      onClose();
     },
-    {
-      onSuccess: (data) => {
-        queryClient.setQueryData('user', data);
-        onClose();
-      },
-      onError: (error: Error) => {
-        setError(error.message);
-      },
+    onError: (error: Error) => {
+      setError(error.message);
     }
-  );
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    updateProfile.mutate(formData);
+    updateProfileMutation.mutate(formData);
   };
 
   return (
@@ -97,9 +92,9 @@ export const EditProfile = ({ open, onClose, currentUser }: EditProfileProps) =>
           <Button
             type="submit"
             variant="contained"
-            disabled={updateProfile.isLoading}
+            disabled={updateProfileMutation.isLoading}
           >
-            {updateProfile.isLoading ? (
+            {updateProfileMutation.isLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
               'Save Changes'

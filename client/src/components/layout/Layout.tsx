@@ -26,6 +26,12 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { EditProfile } from '../profile/EditProfile';
 import { useQuery } from 'react-query';
+import { apiCall } from '../../config/api';
+
+const fetchProfile = async () => {
+  const response = await apiCall('/users/profile');
+  return response.json();
+};
 
 export const Layout = () => {
   const [open, setOpen] = useState(true);
@@ -35,18 +41,7 @@ export const Layout = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  // Fetch user data
-  const { data: user } = useQuery('user', async () => {
-    const response = await fetch('http://localhost:5000/api/users/profile', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to fetch user data');
-    }
-    return response.json();
-  });
+  const { data: user, isLoading } = useQuery('profile', fetchProfile);
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
